@@ -382,7 +382,8 @@ def atualizar_estoque():
                     conexao.commit()
                     print('Atualização realizada com sucesso!')
                     print(f'Produto: {produto_encontrado[1]} - Preço por unidade: {novo_preco} - Unidades disponíveis no estoque: {quantidade}.')
-                    
+                    conexao.close()
+
                 else:
                     print('Digite apenas uma opção de 1 a 3.')
                     conexao.close()
@@ -493,6 +494,7 @@ def menu():
             cancelar_pedido()
         elif opcao == 10:
             encerrar_programa()
+            print('Programa encerrado.')
             break
         else:
             print('Digite apenas o número de uma das opções apresentadas pelo sistema.')
