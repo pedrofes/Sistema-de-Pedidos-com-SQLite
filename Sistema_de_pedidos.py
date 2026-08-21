@@ -249,8 +249,29 @@ def realizar_pedido():
         conexao.close()
 
 def listar_pedidos():
-    pass
+    conexao = sqlite3.connect('estoque.db')
 
+    cursor = conexao.cursor()
+
+    cursor.execute(
+    '''SELECT pedidos.id, clientes.nome, produtos.nome, pedidos.quantidade
+    FROM pedidos
+    JOIN clientes
+    ON pedidos.cliente_id = clientes.id
+    JOIN produtos
+    ON pedidos.produto_id = produtos.id;
+    ''')
+
+    pedidos = cursor.fetchall()
+
+    if pedidos:
+        for pedido in pedidos:
+            print(f'Código do pedido {pedido[0]} - Cliente do pedido: {pedido[1]} - Nome do produto: {pedido[2]} - Unidades adquiridas: {pedido[3]}.')
+        print('Estes são todos os pedidos registrados no estoque.')
+    else:
+        print('Nenhum pedido cadastrado no sistema.')
+
+    conexao.close()
 
 def atualizar_estoque():
 
@@ -316,11 +337,6 @@ def atualizar_estoque():
                         conexao.close()
                         return
 
-                    if novo_preco < 0:
-                        print('Digite um valor maior ou igual a zero para o produto.')
-                        conexao.close()
-                        return
-
                     cursor.execute('''
                         UPDATE produtos SET estoque=? WHERE nome=?;
                         ''',(quantidade, produto_encontrado[1]))
@@ -335,9 +351,14 @@ def atualizar_estoque():
                 elif opcao == 3:
 
                     try:
-                        novo_preco = float(input('').strip())
+                        novo_preco = float(input('Digite o novo preço do produto: ').strip())
                     except ValueError:
                         print('Digite apenas números.')
+                        conexao.close()
+                        return
+
+                    if novo_preco < 0:
+                        print('Digite um valor maior ou igual a zero para o preço.')
                         conexao.close()
                         return
 
@@ -356,7 +377,7 @@ def atualizar_estoque():
 
                     cursor.execute('''
                     UPDATE produtos SET preco=?, estoque=? WHERE nome=?; 
-                    ''', (novo_preco, quantidade))
+                    ''', (novo_preco, quantidade, produto_encontrado[1]))
 
                     conexao.commit()
                     print('Atualização realizada com sucesso!')
@@ -381,8 +402,49 @@ def atualizar_estoque():
 
 
 def cancelar_pedido():
-    pass
+    try:
+        id_remocao = int(input('Digite o id do pedido que deseja cancelar: ').strip())
+    except ValueError:
+        print('Digite apenas números.')
+        return
 
+    conexao = sqlite3.connect('estoque.db')
+
+    cursor = conexao.cursor()
+
+    cursor.execute('''
+    SELECT * FROM pedidos WHERE id=?;
+    ''',(id_remocao,))
+
+    pedido_encontrado = cursor.fetchone()
+
+    if pedido_encontrado:
+
+        cursor.execute('''
+        DELETE FROM pedidos WHERE id=?;
+        ''', (id_remocao,))
+
+        cursor.execute('''
+        SELECT * FROM produtos WHERE id=?;
+        ''',(pedido_encontrado[2],))
+
+        produto_atualizar = cursor.fetchone()
+
+        nova_quantidade = pedido_encontrado[3] + produto_atualizar[3]
+
+        cursor.execute('''
+        UPDATE produtos SET estoque=? WHERE id=?;
+        ''', (nova_quantidade,produto_atualizar[0]))
+
+        conexao.commit()
+        print('Pedido cancelado!')
+
+        conexao.close()
+
+    else:
+        print('O pedido em questão não está registrado no sistema.')
+        conexao.close()
+        return
 
 def encerrar_programa():
     print('Encerrando programa.')
